@@ -3,8 +3,8 @@ title: "ggplot Examples"
 author: "Evan Bowman"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-  pdf_document:
   html_document: default
+  pdf_document:
   theme: sandstone
 ---
  
