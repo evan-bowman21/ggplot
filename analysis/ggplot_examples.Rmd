@@ -3,8 +3,8 @@ title: "ggplot Examples"
 author: "Evan Bowman"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
+  pdf_document:
   html_document: default
-  pdf_document: default
   theme: sandstone
 ---
  
@@ -39,36 +39,15 @@ The data folder contains "college_scorecard_extract_2022-04-20.csv", a *subset* 
 -   `FEMALE`: Share of female students
 -   `PCT_WHITE`: Percent of the population from students' zip codes that is White, via Census data
 
-1.  Load the data.
-
-    1.  Use a relative path and one call to a {readr} function to load the file `data/college_scorecard_extract_2022-04-20.csv` and save the resulting tibble. Note, this data uses "NULL" instead of `NA`. As part of loading the data, use an argument of the {readr} function you chose to convert "NULL" to `NA`. Do not not suppress messages or warnings.
-```{r}
+```{r, include=F}
 scorecard <- read_csv("../data/college_scorecard_extract_2022-04-20.csv", na = c("NULL", "NA"), show_col_types = F)
 ```
 
-    2.  Use `glimpse()` to examine the data.
-```{r}
-glimpse(scorecard)
-```
-
-
-2.  If you used the default settings for reading in the data, multiple variables are probably type/class character when the data suggests they should be numeric.
-    1.  Which ones are they?
-
-The variables that are listed as character that should be numeric are: AGE_ENTRY, FEMALE, FIRST_GEN, GRAD_DEBT_MDN, MN_EARN_WNE_P10, PCT_ASIAN, PCT_BLACK, PCT_HISPANIC, PCT_WHITE. 
-
-    2.  Why were they read in as type character?
-  
-These variables were read in as character strings because they contained entries that were not 'NA' such as 'PrivacySuppressed'. The initial command of changing 'Null' values to 'NA' did not change these character strings. 
-
-3.  Reload the data with a {readr} function and use an argument to convert the offending entries to `NA`s so the variables are automatically read in as class numeric. You should have 31 variables of type double.
-```{r}
+```{r, include=FALSE}
 scorecard <- read_csv("../data/college_scorecard_extract_2022-04-20.csv", na = c(c("NULL", "PrivacySuppressed"), "NA"))
 
 glimpse(scorecard)
 ```
-
-The glimpse function results show the correct number of quantitative variables (31).
 
 4.  How is average faculty salary associated with the average earnings of students ten years after initial enrollment?
 
@@ -78,28 +57,22 @@ ggplot(scorecard, aes(AVGFACSAL, MN_EARN_WNE_P10))+
   geom_point(shape = ".")+
   geom_smooth(se = F)+
   facet_wrap(~ ICLEVEL, nrow = 2)+
-  ggtitle("Avg. Faculty Salary vs Avg. Earnings 10 Years Post Enrollment Across IC Levels")+
+  ggtitle("Avg. Faculty Salary vs Avg. Earnings IC Levels")+
   xlab("Avg. Faculty Salary")+
   ylab("Avg. Earning 10 Years Post Enrollment")
 ```
-
-
-    1.  Explain why {ggplot2} chose the smoothing method.
-    
-          {ggplot2} chose the gam smoothing method because the dataset has over 1,000 observations. 
           
-    2.  Interpret the plots about the potential relationship.
+  2.  Interpret the plots about the potential relationship.
     
-          In IC Level 1 Schools, there seems to be a clear curvilinear trend of average earnings increasing as the faculty salary increases. However, for IC Level 2 schools, there is a brief increase in average earnings but seems to flatten out very quickly. There is more range and variablility to the average earnings of IC Level 1 schools, whereas the average earnings for IC Level 2 schools seems to be clustered at lower earning levels. Furthermore, there is larger spread and varaiability with the average faculty salary in IC Level 1 schools when compared to the IC Level 2 schools. 
+        In IC Level 1 Schools, there seems to be a clear curvilinear trend of average earnings increasing as the faculty salary increases. However, for IC Level 2 schools, there is a brief increase in average earnings but seems to flatten out very quickly. There is more range and variablility to the average earnings of IC Level 1 schools, whereas the average earnings for IC Level 2 schools seems to be clustered at lower earning levels. Furthermore, there is larger spread and varaiability with the average faculty salary in IC Level 1 schools when compared to the IC Level 2 schools. 
     
-    3.  Why is there no `ICLEVEL` 3 plot or if there is a plot why is there no data in the `ICLEVEL` 3 plot?
+  3.  Why is there no `ICLEVEL` 3 plot or if there is a plot why is there no data in the `ICLEVEL` 3 plot?
     
-         As seen by the modified filter of the scorecard set below, the plot for IC Level 3 schools returns no observations because these schools did not report the average faculty salary.
+        As seen by the modified filter of the scorecard set below, the plot for IC Level 3 schools returns no observations because these schools did not report the average faculty salary.
 ```{r}
 scorecard%>%
-  filter(ICLEVEL == 3)%>%
-  select(ICLEVEL, AVGFACSAL ,MN_EARN_WNE_P10)%>%
-  head(, 5)
+  filter(ICLEVEL == 3) %>%
+  summarise(Reported_Sal = sum(!is.na(AVGFACSAL)))
 ```
 
 -   Use `lm()` to run a linear model of the relationship **for only those schools with ICLEVEL 1** and save the results.
@@ -111,21 +84,18 @@ lm1 <- lm(df1$MN_EARN_WNE_P10 ~ df1$AVGFACSAL)
 summary(lm1)
 ```
 
-    1.  Interpret the results of the model based on the $p$ value and $r$-squared value.
+  1.  Interpret the results of the model based on the $p$ value and $r$-squared value.
        
-        With a p-value close to zero, we reject the null hypothesis that there is no statistically significant relationship between average faculty salary and average earnings ten years following enrollment. With an $r$-squared value of .5044, only about 50 percent of the variation for average earnings is explained by the average faculty salary variable. 
+       With a p-value close to zero, we reject the null hypothesis that there is no statistically significant relationship between average faculty salary and average earnings ten years following enrollment. With an $r$-squared value of .5044, only about 50 percent of the variation for average earnings is explained by the average faculty salary variable. 
         
-    2.  Given the $r$-squared value, what might you recommend to try to better predict average earnings of students ten years after initial enrollment at ICLEVEL 1 schools?
+  2.  Given the $r$-squared value, what might you recommend to try to better predict average earnings of students ten years after initial enrollment at ICLEVEL 1 schools?
     
-        I would first look at metrics that indicate the rigour (and thus reputation) of the school. Some of these variables would be admissions rate (ADM_RATE) and SAT average (SAT_AVE). 
+      I would first look at metrics that indicate the rigour (and thus reputation) of the school. Some of these variables would be admissions rate (ADM_RATE) and SAT average (SAT_AVE). 
 
 
 5.  Does the level of the institution seem to be associated with the mean earnings of students ten years after enrollment?
 
 -   Make a plot
-
-    1.  Reproduce this plot using {ggplot2} to explore this relationship.
-        -   Use the `ggthemes::theme_fivethirtyeight()` and chunk option `fig.width=7`.
 ```{r, fig.width=7, warning=FALSE}
 ggplot(scorecard)+
   geom_boxplot(aes(x = as.factor(ICLEVEL), y=MN_EARN_WNE_P10))+
@@ -135,9 +105,9 @@ ggplot(scorecard)+
 ```
 
 
-    2.  Interpret the plot.
+  2.  Interpret the plot.
     
-        The median of the average earnings for IC Level 1 schools are greater than both IC Level 2 and 3 schools. IC Level 2 schools also has higher median average earnings than IC Level 3 schools. IC Level 1 schools have higher variability in the outliers of average earnings (~ 100k) compared to IC Level 2 (~ 30k) and IC Level 3 (~30k).
+       The median of the average earnings for IC Level 1 schools are greater than both IC Level 2 and 3 schools. IC Level 2 schools also has higher median average earnings than IC Level 3 schools. IC Level 1 schools have higher variability in the outliers of average earnings (~ 100k) compared to IC Level 2 (~ 30k) and IC Level 3 (~30k).
 
 
 -   Use `aov()` to test if all of the IC levels have the same true mean of *logged* earnings of students ten years after enrollment.
@@ -145,17 +115,17 @@ ggplot(scorecard)+
 anova <- aov(log(MN_EARN_WNE_P10) ~ ICLEVEL, data = scorecard)
 ```
 
-    1.  Why would we look at the log of mean earnings instead of the un-logged values?
+  1.  Why would we look at the log of mean earnings instead of the un-logged values?
        
 From the boxplot, there are a large number of outliers. The log transformation decreases the number of outliers by condensing the variability and spread of the data. 
     
-    2.  Use `broom::tidy()` to show the results.
+  2.  Use `broom::tidy()` to show the results.
 ```{r}
 broom::tidy(anova)
 ```
     
-    3.  Interpret the results
-        With a $p$-value of 0, we can confidently reject the null hypothesis that the mean average of earnings are equal across all IC Levels. There is statistically significant evidence that suggests at least one of the IC Level's mean average earnings are not equal to the others. 
+  3.  Interpret the results
+      With a $p$-value of 0, we can confidently reject the null hypothesis that the mean average of earnings are equal across all IC Levels. There is statistically significant evidence that suggests at least one of the IC Level's mean average earnings are not equal to the others. 
 
 6.  Create two plots with the attributes below
     1.  Plot the median earnings 10 years after enrollment for level 1 institutions as the Y axis against `PCT_WHITE`
@@ -168,32 +138,31 @@ broom::tidy(anova)
 df2 <- scorecard%>%
   filter(ICLEVEL == 1)
 
-ggplot(df2,aes(x =PCT_WHITE, y = MD_EARN_WNE_P10))+
+p_white <- ggplot(df2,aes(x =PCT_WHITE, y = MD_EARN_WNE_P10))+
   geom_point()+
   scale_y_log10() +
   geom_smooth(method = "loess")+
   ggtitle("Median Earnings vs. Percent White")
-```
-        
-```{r, warning=FALSE, message=FALSE}
+
 # 6.2 Plot
-ggplot(df2, aes(FEMALE, MD_EARN_WNE_P10))+
+p_female <- ggplot(df2, aes(FEMALE, MD_EARN_WNE_P10))+
   geom_point()+
   scale_y_log10() +
   geom_smooth(method = "loess") +
   ggtitle("Female vs. Median Earnings")
-  
+
+gridExtra::grid.arrange(p_white, p_female)
 ```
 
-    3.  Describe and interpret the non-linear relationship in each of the plots.
+  3.  Describe and interpret the non-linear relationship in each of the plots.
     
-        For the plot analyziing median earnings against the percentaege of the white studetn population, there is an increase of median salary as the percentage of white students increases. This trend peaks at around 85 percent white student population and then begins to decrease at a larger magnitude than the previous increase. This shows that the majority of schools with higher median earnings are those that have a majority white presence on campus. This can fall into the conversation of funding for schools that serve more minority students which receive less funding and oppurunity, as well as the conversation regarding oppurtunity in public grade school education for predominately minority neighborhoods. 
-        
-        For the plot analyzing median earnings against the proportion of female students, there is a small curvilinear trend from 0 to around .52 that ultimately starts and ends at roughly the same log value of median earnings. As the proportion of females increases from .5, there is a strong negative relationship between proportion female and median earnings. This shows that the best schools for median earnings are those that have fairly equal representation between males and females in the student body.  
+      For the plot analyziing median earnings against the percentaege of the white studetn population, there is an increase of median salary as the percentage of white students increases. This trend peaks at around 85 percent white student population and then begins to decrease at a larger magnitude than the previous increase. This shows that the majority of schools with higher median earnings are those that have a majority white presence on campus. This can fall into the conversation of funding for schools that serve more minority students which receive less funding and oppurunity, as well as the conversation regarding oppurtunity in public grade school education for predominately minority neighborhoods. 
+      
+  For the plot analyzing median earnings against the proportion of female students, there is a small curvilinear trend from 0 to around .52 that ultimately starts and ends at roughly the same log value of median earnings. As the proportion of females increases from .5, there is a strong negative relationship between proportion female and median earnings. This shows that the best schools for median earnings are those that have fairly equal representation between males and females in the student body.  
     
-    4.  What are the ethical implications of the definition of PCT_White?
+  4.  What are the ethical implications of the definition of PCT_White?
     
-        There are several ethical implications of the definition of white. A major one is the analysis of the variable without taking into account any other variables. From just the first plot, there is a possible interpretation of median earnings increasing as the institution increaseness in whiteness. 
+      There are several ethical implications of the definition of white. A major one is the analysis of the variable without taking into account any other variables. From just the first plot, there is a possible interpretation of median earnings increasing as the institution increaseness in whiteness. 
 
 7.  Create a single scatter plot of the mean earnings 10 years after enrollment (Y axis) compared to the median earnings 10 years after enrollment (X axis) with the following attributes:
     1.  Use log scales for both axes.
@@ -229,7 +198,7 @@ scorecard_ROI_rank <-scorecard_ROI%>%
   arrange(Rank)
 ```
 
-    3.  Identify the top 5 best (highest ROI should be rank value 1 ) and the bottom 5 worst (smallest ROI should have largest rank number). Show only the rank, name, ROI, cost to attend, median debt at graduation, and median earnings 10 years after enrollment.
+  3.  Identify the top 5 best (highest ROI should be rank value 1 ) and the bottom 5 worst (smallest ROI should have largest rank number). Show only the rank, name, ROI, cost to attend, median debt at graduation, and median earnings 10 years after enrollment.
 ```{r}
 # 5 Best
 scorecard_ROI_rank%>%
@@ -245,7 +214,7 @@ scorecard_ROI_rank%>%
 ```
 
 
-    4.  What is American University's rank and ROI? Show only the rank, name, ROI, cost to attend, median debt at graduation and median earnings 10 years after enrollment.
+  4.  What is American University's rank and ROI? Show only the rank, name, ROI, cost to attend, median debt at graduation and median earnings 10 years after enrollment.
 ```{r}
 scorecard_ROI_rank%>%
   filter(INSTNM == "American University")%>%
@@ -254,7 +223,7 @@ scorecard_ROI_rank%>%
 
 American's ROI ranking is 455. 
 
-    2.  What is AU's new ranking and ROI if the mean earnings are used?
+  2.  What is AU's new ranking and ROI if the mean earnings are used?
 ```{r}
 scorecard_ROI_mean <- scorecard%>%
   mutate(ROI = MN_EARN_WNE_P10 / GRAD_DEBT_MDN)
@@ -290,9 +259,7 @@ The World Bank provides loans to countries with the goal of reducing poverty. Th
 -   `population_2021.csv`: Contains the population information for each country, each region, and the world for the year.
     -   For the variables `1960` to `2021`, the values in the cells represent the total population in number of people for the given year.
     -   Total population is based on the *de facto* definition of population, which counts all residents regardless of legal status or citizenship. The values shown are mid-year estimates.
-
-1.  Use a relative path and a {readr} function to load each of these four files into its own tibble.
-```{r, results='hide'}
+```{r, results='hide', include=FALSE}
 country <- read_csv("../data/country_2021.csv", show_col_types = F)
 fertility <- read_csv("../data/fertility_rate_2020.csv", show_col_types = F, skip = 4)
 life <- read_csv("../data/life_expectancy_2020.csv", show_col_types = F, skip = 4)
@@ -317,8 +284,6 @@ fert_tidy <- df %>%
     values_to = "Fert_Rate",
     names_transform = list(Year = as.numeric))
 
-head(fert_tidy)
-
 # Life Expectancy Data
 df1 <- life %>%
   select(-3, -4)
@@ -330,8 +295,6 @@ life_tidy <- df1%>%
     values_to = "Life_Expect",
     names_transform = list(Year = as.numeric))
 
-head(life_tidy)
-
 # Population Data
 df2 <- population %>%
   select(-3, -4)
@@ -342,8 +305,6 @@ pop_tidy <- df2%>%
     names_to = "Year",
     values_to = "Population", 
     names_transform = list(Year = as.numeric))
-
-head(pop_tidy)
 ```
 
 3.  Combine tibbles.
@@ -356,15 +317,14 @@ fert_tidy %>%
   tibble()
 ```
 
-    2.  Save the resulting tibble to a new name. It should include the fertility rate, population, and life expectancy in each year as well as the `Region`, `IncomeGroup`, `TableName`, and `SpecialNotes` for each country.
-```{r, message=FALSE}
+```{r, message=FALSE, include=FALSE}
 full_tidy <- fert_tidy %>%
   right_join(life_tidy, by = NULL) %>%
   right_join(pop_tidy, by = NULL) %>%
   right_join(country, by = NULL)
 ```
 
-    3.  Identify the distinct values for the two columns of `Country Name` and `TableName` where they do not match each other. There should be nine. What do you notice about them?
+  3.  Identify the distinct values for the two columns of `Country Name` and `TableName` where they do not match each other. There should be nine. What do you notice about them?
 ```{r}
 differ <- subset(full_tidy, !(TableName %in% `Country Name`))
 unique(differ$`Country Name`)
@@ -378,9 +338,7 @@ The nine distinct values are countries and regions that differ in spelling betwe
     2.  Color-code by region and indicate population by size.
     3.  Include only the years 1960, 1980, 2000, and 2020.
     4.  Facet by these years.
-    5.  Your final plot should look like the below with `scale_color_viridis_d()` (Each element of the formatting is graded):
-
-    6.  **Interpret the plot in one sentence**.
+    5.  **Interpret the plot in one sentence**.
 ```{r, warning=FALSE}
 target <- c(1960, 1980, 2000, 2020)
 facet_year <- full_tidy%>%
@@ -404,8 +362,7 @@ There is a clear negative association between life expectancy and fertility rate
 5.  Regional Population
     1.  Calculate the total population for each region for each year.
     2.  Make a line plot of year (Y) versus total population (X), color-coding by region and using a *log scale* for Y.
-    3.  Your final plot should look like the below using (`ggthemes::scale_color_colorblind`):
-    4.  **Interpret the plot in one sentence to identify the two fastest growing regions**.
+    3.  **Interpret the plot in one sentence to identify the two fastest growing regions**.
 ```{r}
 pop_year <- full_tidy%>% group_by(Region)%>%
   count(Year, wt = Population, sort = T)
@@ -427,8 +384,7 @@ The two fastest growing regions are Sub-Saharan Africa and the Middle East and N
     1.  Use code to automatically order the Regions on the $y$-axis in **increasing** order of total 1960 population.
     2.  For any countries with negative growth set to .001.
     3.  Add a red line at 100%
-    4.  Your final plot should look like the one below:
-    5.  **Interpret the plot in one sentence to compare the percentage growth with the previous plot.**
+    4.  **Interpret the plot in one sentence to compare the percentage growth with the previous plot.**
 ```{r, warning=FALSE}
 target1 <- c(1960, 2020)
 growth_prop <- full_tidy%>% group_by(`Country Name`)%>%
